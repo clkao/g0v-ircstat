@@ -1,0 +1,33 @@
+{
+  "author": "kcwu",
+  "status": "alpha",
+  "name": "g0v-ircstat",
+  "description": "g0v irc stats",
+  "homepage": "http://kcwu.csie.org/~kcwu/ircstat/g0v.html",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kcwu/g0v-ircstat"
+  },
+  "licenses": [
+    {
+      "type": "MIT"
+    }
+  ],
+  "keywords": [
+    "irc"
+  ],
+  "audience": [
+    "public"
+  ],
+  "products": [
+    "website"
+  ],
+  "projects": [
+    "g0v-stats"
+  ],
+  "contributors": [
+  ],
+  "needs": [
+  ]
+}
+

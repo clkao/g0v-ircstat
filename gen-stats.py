@@ -89,6 +89,7 @@ def main():
     by_date = []
     threshold = 0, 1, 5, 10, 20, 30, 100
     by_date.append(('threshold', threshold))
+    by_date_per_day = []
     nicks = collections.defaultdict(int)
     nick_time = {}
     nick_to = {}
@@ -104,6 +105,7 @@ def main():
             #    continue
             #if '2013/08/06' in path:
             #    continue
+            nicks_one_day = {}
 
             for line in openfile(path):
                 parsed_line = parse_line(line)
@@ -119,9 +121,12 @@ def main():
                     nicks[nick] = 0
                     nick_time[nick] = [0]*24
                     nick_to[nick] = collections.defaultdict(int)
+                if nick not in nicks_one_day:
+                    nicks_one_day[nick] = 0
 
                 if cmd in ('msg_to', 'msg', 'action'):
                     nicks[nick] += 1
+                    nicks_one_day[nick] += 1
                     nick_time[nick][int(timestr[:2])] += 1
                     if cmd == 'msg_to':
                         for to in parsed_line[3].split(','):
@@ -131,12 +136,14 @@ def main():
                             nick_to[nick][to] += 1
                 elif cmd == 'join':
                     nicks[nick] += 0
+                    nicks_one_day[nick] += 0
                 else:
                     assert 0
                 #print line
             date = get_date(path)
             #print date, len(nicks)
             by_date.append((date, counting(nicks, threshold)))
+            by_date_per_day.append((date, counting(nicks_one_day, [1])[0]))
             #print date, counting(nicks, threshold)
 
     by_nick = []
@@ -157,7 +164,7 @@ def main():
         by_nick.append((nick ,c))
         #print nick
 
-    result = dict(by_date=by_date, by_nick=by_nick, by_nick_time=nick_time, by_nick_to=nick_to)
+    result = dict(by_date=by_date, by_nick=by_nick, by_nick_time=nick_time, by_nick_to=nick_to, by_date_per_day=by_date_per_day)
     print json.dumps(result)
 
 if __name__ == '__main__':

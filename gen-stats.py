@@ -3,6 +3,7 @@ import os
 import re
 import collections
 import json
+import datetime
 
 path_pisgcfg = './pisg.cfg'
 path_irclog = './irclogs'
@@ -44,9 +45,9 @@ def parse_line(line):
     return None, None, None
 
 def get_date(fn):
-    m = re.search(r'#g0v.tw/(\d{4}/\d\d/\d\d)', fn)
+    m = re.search(r'#g0v.tw/(\d{4})/(\d\d)/(\d\d)', fn)
     assert m
-    return m.group(1)
+    return datetime.date(*map(int, m.group(1, 2, 3)))
 
 normallizer = []
 
@@ -90,21 +91,25 @@ def main():
     threshold = 0, 1, 5, 10, 20, 30, 100
     by_date.append(('threshold', threshold))
     by_date_per_day = []
+    by_date_cumu_per_nick = {}
     nicks = collections.defaultdict(int)
     nick_time = {}
     nick_to = {}
     #print threshold
+    cumu = {}
+    last_date = None
     for root, dirs, files in os.walk(os.path.join(path_irclog, 'FreeNet/#g0v.tw')):
         dirs.sort()
         files.sort()
 
         for fn in files:
             path = os.path.join(root, fn)
-            #print path
-            #if '2013/08/05' in path:
-            #    continue
-            #if '2013/08/06' in path:
-            #    continue
+            date = get_date(path)
+
+            if last_date:
+                for i in range(date.toordinal() - last_date.toordinal() - 1):
+                    for k in cumu.keys():
+                        cumu[k].append(cumu[k][-1])
             nicks_one_day = {}
 
             for line in openfile(path):
@@ -121,6 +126,7 @@ def main():
                     nicks[nick] = 0
                     nick_time[nick] = [0]*24
                     nick_to[nick] = collections.defaultdict(int)
+                    cumu[nick] = [str(date)]
                 if nick not in nicks_one_day:
                     nicks_one_day[nick] = 0
 
@@ -140,17 +146,20 @@ def main():
                 else:
                     assert 0
                 #print line
-            date = get_date(path)
             #print date, len(nicks)
-            by_date.append((date, counting(nicks, threshold)))
-            by_date_per_day.append((date, counting(nicks_one_day, [1])[0]))
+            for k in nicks:
+                cumu[k].append(nicks[k])
+            by_date.append((str(date), counting(nicks, threshold)))
+            by_date_per_day.append((str(date), counting(nicks_one_day, [1])[0]))
             #print date, counting(nicks, threshold)
+            last_date = date
 
     by_nick = []
     for nick, c in sorted(nicks.items(), key=lambda (k,v):v, reverse=True):
 
         if c <= 20:
             del nick_time[nick]
+            del cumu[nick]
 
         for to, to_c in nick_to[nick].items():
             if to_c == 1:
@@ -164,7 +173,8 @@ def main():
         by_nick.append((nick ,c))
         #print nick
 
-    result = dict(by_date=by_date, by_nick=by_nick, by_nick_time=nick_time, by_nick_to=nick_to, by_date_per_day=by_date_per_day)
+    result = dict(by_date=by_date, by_nick=by_nick, by_nick_time=nick_time, by_nick_to=nick_to, by_date_per_day=by_date_per_day,
+            by_date_cumu_per_nick=cumu)
     print json.dumps(result)
 
 if __name__ == '__main__':
